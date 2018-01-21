@@ -59,10 +59,45 @@ def generateKey(sizeOfData, maxSizeOfBlock=16):
 		sizeOfData = sizeOfData - sizeOfBlock
 	return key
 
-def encrypt(data):
-	#encrypt function for maxSizeBlock = 63 bytes
+
+# Generates a valid key from passed a ascii encoded string
+def generateKeyFromString(sizeOfData, str):
+	
+	# Characters of str is repeated continously to generate the key for the given data size
+	# The last byte is calculated
+	# All the size of block must add to sizeOfData
+
+	# Calculate size represented by str
+	size_rep = 0
+	str_bytes = bytearray(str.encode('ascii'))
+	for cbyte in str_bytes:
+		size_rep = size_rep + (cbyte >> 2)
+
+	# Calculate number of times str can be added to key
+	num_str =  sizeOfData // size_rep
+
+	# add str to key num_str times
+	key = str_bytes * num_str
+	sizeOfData = sizeOfData - (size_rep * num_str)
+
+	# loop through all characters and add to key. Calculate last char
+	i = 0
+	while sizeOfData > 0:
+		ch = str_bytes[i]
+		size_rep_ch = ch >> 2
+		if sizeOfData < size_rep_ch:
+			ch = (sizeOfData << 2) | (ch & 3)
+		key.append(ch)
+		sizeOfData = sizeOfData - size_rep_ch
+		i = i + 1
+
+	return key
+
+
+def encrypt(data, maxSizeOfBlock = 16):
+	#encrypt function for maxSizeOfBlock = 63 bytes
 	sizeOfData = len(data)
-	key = generateKey(sizeOfData)
+	key = generateKey(sizeOfData, maxSizeOfBlock)
 	encryptedData = bytearray()
 	sizeOfDataDone = 0
 	data_i = 0 # read from 0th position of data bytearray
@@ -126,8 +161,6 @@ def decryptStr(strEncryptedData, strKey):
 	return strDecryptedData
 
 
-
-
 # data , key = encryptStr("Hello its me")
 # print(data)
 # print(key)
@@ -149,7 +182,7 @@ def decryptStr(strEncryptedData, strKey):
 
 # print(dec)
 
-
+# testcount = 1
 # while True:
 	
 # 	# dataSize = random.randrange(2,1000000)
