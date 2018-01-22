@@ -8,14 +8,31 @@ block_size = 2
 
 # hides 2 bit of cover_img with sec_img
 def hide_image(cover_img, sec_img, strKey):
+	if np.prod(sec_img.shape) > (np.prod(cover_img.shape) / 4 - 5):
+		raise ValueError("secret image too large to be hiffen in cover image")
+
 	# stego_img becomes negetive  sometimes when 2 bits of cover_img_freq is replaced 
 	# To solve this we make cover image lie from 4-251 
 	cover_img = np.copy(cover_img)
-	#cover_img[ cover_img > 251] = 251
+	cover_img[ cover_img > 251] = 251
 	cover_img[ cover_img < 4] = 4
 
+	#add metadata 1st byte : type of image 1:grayscale 3:truecolor
+	#			  2-3 byte : width
+	#			  4-5 byte : height
+	metadata = bytearray([0] * 5)
+	if len(sec_img.shape) > 2:
+		metadata[0] = 3
+	else:
+		metadata[0] = 1
+	metadata[1] = sec_img.shape[0] >> 8 
+	metadata[2] = sec_img.shape[0] & 0xFF
+	metadata[3] = sec_img.shape[1] >> 8 
+	metadata[4] = sec_img.shape[1] & 0xFF
+
+
 	#encrypting the sec_img
-	e_sec_img = te.encrypt(bytearray(sec_img), strKey)
+	e_sec_img = metadata + te.encrypt(bytearray(sec_img), strKey)
 	e_sec_img = np.frombuffer(e_sec_img, dtype='uint8')
 
 	#converting encrypted sec_img to same dimension as cover_img
@@ -46,12 +63,23 @@ def unhide_image(stego_img, strKey):
 	stego_img_freq = (np.reshape(stego_img_freq, (-1,4)) & 0b11).astype(np.uint8)
 	stego_img_freq[:,0]  = (stego_img_freq[:,0] << 6) | (stego_img_freq[:,1] << 4) | (stego_img_freq[:,2] << 2) | stego_img_freq[:,3] 
 
+	#extract metadata   1st byte : type of image 0:grayscale 1:truecolor
+	#			  		2-3 byte : width
+	#			  		4-5 byte : height
+	metadata = stego_img_freq[:5,0]
+	sec_img_width = metadata[1] << 8 | metadata[2]
+	sec_img_height = metadata[3] << 8 | metadata[4]
+	sec_img_shape = (sec_img_width,sec_img_height,metadata[0])
+
 	#decrypt sec_img
-	sec_img = te.decrypt(bytearray(stego_img_freq[:256*256,0]), strKey)
+	sec_img = te.decrypt(bytearray(stego_img_freq[5:np.prod(sec_img_shape)+5,0]), strKey)
 	sec_img = np.frombuffer(sec_img, dtype='uint8')
 
-	#assuming dim is known
-	sec_img = np.reshape(sec_img,(256,256))
+	#reshaping image
+	if metadata[0] == 1: # grayscale
+		sec_img = np.reshape(sec_img,(sec_img_width,sec_img_height))
+	elif metadata[0] == 3:
+		sec_img = sec_img = np.reshape(sec_img,sec_img_shape)
 	
 	return sec_img
 
@@ -72,20 +100,8 @@ def main():
 	parser.add_argument("key", help="key to encrypt Secret Image")
 	args = parser.parse_args()
 	cover_img_path = args.coverimage
-	print(cover_img_path)
-
-
-
-	# if len(sys.argv) < 2:
-	# 	print("Usage fdpt.py image.png")
-	# 	print("Using default image")
-	# 	cover_img_path = './Images/boat.512.tiff'
-	# else:
-	# 	cover_img_path = sys.argv[1]
-
-
-	sec_img_path = './Images/5.1.14.tiff'
-	strKey = 'qwerty'
+	sec_img_path = args.secretimage
+	strKey = args.key
 
 	#loading
 	cover_img = ftools.load_image(cover_img_path)
