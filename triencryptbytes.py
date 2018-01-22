@@ -94,10 +94,10 @@ def generateKeyFromString(sizeOfData, str):
 	return key
 
 
-def encrypt(data, maxSizeOfBlock = 16):
+def encrypt(data, strKey):
 	#encrypt function for maxSizeOfBlock = 63 bytes
 	sizeOfData = len(data)
-	key = generateKey(sizeOfData, maxSizeOfBlock)
+	key = generateKeyFromString(sizeOfData, strKey)
 	encryptedData = bytearray()
 	sizeOfDataDone = 0
 	data_i = 0 # read from 0th position of data bytearray
@@ -112,11 +112,12 @@ def encrypt(data, maxSizeOfBlock = 16):
 		targetBlock = genTargetBlock(blockVal, sizeOfBlock, optionNo)
 		encryptedData = encryptedData + targetBlock.to_bytes(sizeOfBlock, byteorder='big', signed=False)
 		#sizeOfDataDone = sizeOfDataDone + sizeOfBlock
-	return (encryptedData,key)
+	return encryptedData
 
-def decrypt(data, key):
+def decrypt(data, strKey):
 	#decrypt function for maxSizeBlock = 63 bytes
 	sizeOfData = len(data)
+	key = generateKeyFromString(sizeOfData, strKey)
 	decryptedData = bytearray()
 	sizeOfDataDone = 0
 	data_i = 0 # read from 0th position of data bytearray
