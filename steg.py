@@ -1,15 +1,15 @@
-import sys
 import fdpttools as ftools
 import triencryptbytes as te
 import numpy as np
 import math
 import argparse
+import time
 block_size = 2
 
 # hides 2 bit of cover_img with sec_img
 def hide_image(cover_img, sec_img, strKey):
 	if np.prod(sec_img.shape) > (np.prod(cover_img.shape) / 4 - 5):
-		raise ValueError("secret image too large to be hiffen in cover image")
+		raise ValueError("secret image too large to be hidden in cover image")
 
 	# stego_img becomes negetive  sometimes when 2 bits of cover_img_freq is replaced 
 	# To solve this we make cover image lie from 4-251 
@@ -17,9 +17,10 @@ def hide_image(cover_img, sec_img, strKey):
 	cover_img[ cover_img > 251] = 251
 	cover_img[ cover_img < 4] = 4
 
-	#add metadata 1st byte : type of image 1:grayscale 3:truecolor
-	#			  2-3 byte : width
-	#			  4-5 byte : height
+	#add metadata to encrypted secret_img 
+	# 1st byte : type of image 1:grayscale 3:rgb
+	# 2-3 byte : width
+	# 4-5 byte : height
 	metadata = bytearray([0] * 5)
 	if len(sec_img.shape) > 2:
 		metadata[0] = 3
@@ -35,22 +36,24 @@ def hide_image(cover_img, sec_img, strKey):
 	e_sec_img = metadata + te.encrypt(bytearray(sec_img), strKey)
 	e_sec_img = np.frombuffer(e_sec_img, dtype='uint8')
 
-	#converting encrypted sec_img to same dimension as cover_img
+	#dividing encrypted sec_img into np array of 2 bits
 	e_sec_img =  np.repeat(e_sec_img, 4, axis = 0)
 	e_sec_img[::4] = e_sec_img[::4] >> 6
 	e_sec_img[1::4] = (e_sec_img[1::4] >> 4) & 3
 	e_sec_img[2::4] = (e_sec_img[2::4] >> 2) & 3
 	e_sec_img[3::4] = e_sec_img[3::4] & 3
 	#ftools.save_image(np.reshape(e_sec_img,(512,512)),"encrypted.png")
-	e_sec_img.resize(cover_img.shape)
+	e_sec_img_size = len(e_sec_img)
 
 	#converting cover_img to frequency domain
-	cover_img_freq = ftools.fdpt(cover_img,block_size)
+	cover_img_freq = ftools.fdpt(cover_img,block_size, shape = (-1))
+
 	#hiding encrypted sec_img in cover_img_freq
-	stego_img_freq = ((cover_img_freq >> 2) << 2) | e_sec_img
+	stego_img_freq = cover_img_freq
+	stego_img_freq[:e_sec_img_size] = ((cover_img_freq[:e_sec_img_size] >> 2) << 2) | e_sec_img
 	
 	#converting stego_img_freq to spatial domain
-	stego_img = ftools.ifdpt(stego_img_freq,block_size)
+	stego_img = ftools.ifdpt(stego_img_freq,block_size, shape = cover_img.shape)
 
 	return stego_img
 
@@ -63,9 +66,10 @@ def unhide_image(stego_img, strKey):
 	stego_img_freq = (np.reshape(stego_img_freq, (-1,4)) & 0b11).astype(np.uint8)
 	stego_img_freq[:,0]  = (stego_img_freq[:,0] << 6) | (stego_img_freq[:,1] << 4) | (stego_img_freq[:,2] << 2) | stego_img_freq[:,3] 
 
-	#extract metadata   1st byte : type of image 0:grayscale 1:truecolor
-	#			  		2-3 byte : width
-	#			  		4-5 byte : height
+	# extract metadata
+	# 1st byte : type of image 0:grayscale 1:rgb
+	# 2-3 byte : width
+	# 4-5 byte : height
 	metadata = stego_img_freq[:5,0]
 	sec_img_width = metadata[1] << 8 | metadata[2]
 	sec_img_height = metadata[3] << 8 | metadata[4]
@@ -80,7 +84,6 @@ def unhide_image(stego_img, strKey):
 		sec_img = np.reshape(sec_img,(sec_img_width,sec_img_height))
 	elif metadata[0] == 3:
 		sec_img = sec_img = np.reshape(sec_img,sec_img_shape)
-	
 	return sec_img
 
 
@@ -94,38 +97,42 @@ def max_diff(cover_img, stego_img):
 	return np.max(abs(cover_img - stego_img))
 
 def main():
-	parser = argparse.ArgumentParser()
+
+	parser = argparse.ArgumentParser(description = 'Performs Steganography')
 	parser.add_argument("coverimage", help="Cover Image path")
 	parser.add_argument("secretimage", help="Secret Image path")
-	parser.add_argument("key", help="key to encrypt Secret Image")
+	parser.add_argument("key", help="Key to encrypt Secret Image")
 	args = parser.parse_args()
 	cover_img_path = args.coverimage
 	sec_img_path = args.secretimage
 	strKey = args.key
 
+	print('Loading ...')
+	tick = time.clock()
 	#loading
 	cover_img = ftools.load_image(cover_img_path)
 	sec_img = ftools.load_image(sec_img_path)
+	tock = time.clock()
+	print('Loading Complete. Time taken ' + str(tock - tick))
 
+	print('Hiding image ...')
+	tick = time.clock()
 	#hide
 	stego_img= hide_image(cover_img, sec_img, strKey)
-
 	ftools.save_image(stego_img,"stego.png")
+	tock = time.clock()
+	print('Hiding Complete. Time Taken ' + str(tock - tick))
+	print ("PSNR is "+ str(psnr(cover_img, stego_img)))
+	print ("Max pixel difference is "+ str(max_diff(cover_img, stego_img)))
 
-	print ("psnr is "+ str(psnr(cover_img, stego_img)))
-	print ("max pixel diff is "+ str(max_diff(cover_img, stego_img)))
+	print('Retrieving image ...')
+	tick = time.clock()
 	#unhide
-	unhide_image(stego_img, strKey)
+	ext_sec_img = unhide_image(stego_img, strKey)
+	ftools.save_image(ext_sec_img, 'ext_sec_img.png')
+	tock = time.clock()
+	print('Image Retrieved. Time Taken ' + str(tock - tick))
 
-	ftools.save_image(sec_img, 'ext_sec_img.png')
-
-	#strKey = base64.b64encode(key).decode()
-	#print(strKey)
-
-	# fre_img = ftools.fdpt(img, 4)
-	# out = ftools.ifdpt(fre_img, 4)
-	# ftools.save_image(fre_img, 'freq.png')
-	# ftools.save_image(out, 'output.bmp')
 
 if __name__ == "__main__":
 	main()
