@@ -68,6 +68,7 @@ def generateKeyFromString(sizeOfData, str):
 	# All the size of block must add to sizeOfData
 
 	# Calculate size represented by str
+	str = str + '.'
 	size_rep = 0
 	str_bytes = bytearray(str.encode('ascii'))
 	for cbyte in str_bytes:
