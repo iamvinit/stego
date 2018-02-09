@@ -72,7 +72,7 @@ def generateKeyFromString(sizeOfData, str):
 	size_rep = 0
 	str_bytes = bytearray(str.encode('ascii'))
 	for cbyte in str_bytes:
-		size_rep = size_rep + (cbyte >> 2)
+		size_rep = size_rep + ((cbyte >> 2) * 2)
 
 	# Calculate number of times str can be added to key
 	num_str =  sizeOfData // size_rep
@@ -85,7 +85,7 @@ def generateKeyFromString(sizeOfData, str):
 	i = 0
 	while sizeOfData > 0:
 		ch = str_bytes[i]
-		size_rep_ch = ch >> 2
+		size_rep_ch = (ch >> 2) * 2
 		if sizeOfData < size_rep_ch:
 			ch = (sizeOfData << 2) | (ch & 3)
 		key.append(ch)
@@ -103,7 +103,9 @@ def encrypt(data, strKey):
 	sizeOfDataDone = 0
 	data_i = 0 # read from 0th position of data bytearray
 	for blockConfig in key:
-		sizeOfBlock = blockConfig >> 2
+		sizeOfBlock = (blockConfig >> 2 ) * 2
+		if blockConfig == key[-1]:
+			sizeOfBlock = sizeOfBlock // 2
 		optionNo = blockConfig & ((1 << 2) - 1)
 		blockVal = int.from_bytes(data[data_i : data_i+sizeOfBlock], byteorder='big', signed=False)
 		data_i = data_i+sizeOfBlock
@@ -123,7 +125,9 @@ def decrypt(data, strKey):
 	sizeOfDataDone = 0
 	data_i = 0 # read from 0th position of data bytearray
 	for blockConfig in key:
-		sizeOfBlock = blockConfig >> 2
+		sizeOfBlock = (blockConfig >> 2 ) * 2
+		if blockConfig == key[-1]:
+			sizeOfBlock = sizeOfBlock // 2
 		optionNo = blockConfig & ((1 << 2) - 1)
 		if optionNo == 1:
 			optionNo = 2
