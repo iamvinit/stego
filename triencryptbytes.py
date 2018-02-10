@@ -1,6 +1,7 @@
 import random
 import binascii
 import base64
+import time
 from string import ascii_uppercase, ascii_lowercase, digits
 def reverseBit(num, noOfBits):
     result = 0
@@ -96,6 +97,9 @@ def generateKeyFromString(sizeOfData, str):
 
 
 def encrypt(data, strKey):
+	tick = time.clock()
+	print('Encrypting image ...')
+	
 	#encrypt function for maxSizeOfBlock = 63 bytes
 	sizeOfData = len(data)
 	key = generateKeyFromString(sizeOfData, strKey)
@@ -115,9 +119,14 @@ def encrypt(data, strKey):
 		targetBlock = genTargetBlock(blockVal, sizeOfBlock, optionNo)
 		encryptedData = encryptedData + targetBlock.to_bytes(sizeOfBlock, byteorder='big', signed=False)
 		#sizeOfDataDone = sizeOfDataDone + sizeOfBlock
+	tock = time.clock()
+	print('Encryption Complete. Total Time Taken ' + str(tock - tick))
 	return encryptedData
 
 def decrypt(data, strKey):
+	tick = time.clock()
+	print('Decrypting image ...')
+
 	#decrypt function for maxSizeBlock = 63 bytes
 	sizeOfData = len(data)
 	key = generateKeyFromString(sizeOfData, strKey)
@@ -141,6 +150,9 @@ def decrypt(data, strKey):
 		targetBlock = genTargetBlock(blockVal, sizeOfBlock, optionNo)
 		decryptedData = decryptedData + targetBlock.to_bytes(sizeOfBlock, byteorder='big', signed=False)
 		#sizeOfDataDone = sizeOfDataDone + sizeOfBlock
+	tock = time.clock()
+	print('Decryption Complete. Total Time Taken ' + str(tock - tick))
+
 	return decryptedData
 
 
