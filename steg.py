@@ -35,6 +35,7 @@ def hide_image(cover_img, sec_img, strKey):
 	#encrypting the sec_img
 	e_sec_img = metadata + te.encrypt(bytearray(sec_img), strKey)
 	e_sec_img = np.frombuffer(e_sec_img, dtype='uint8')
+	ftools.save_image(np.reshape(e_sec_img[5:],sec_img.shape), "encrypted.png")
 
 	#dividing encrypted sec_img into np array of 2 bits
 	e_sec_img =  np.repeat(e_sec_img, 4, axis = 0)
