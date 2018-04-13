@@ -126,13 +126,13 @@ def encrypt(data, strKey):
 		# print(sizeOfBlock)
 		# print(optionNo)
 		# print(sizeOfData)
-		#print(sizeOfDataDone)
+		# print(sizeOfDataDone)
 
 		targetBlock = genTargetBlock(blockVal, sizeOfBlock, optionNo)
 		encryptedData = encryptedData + targetBlock.to_bytes(sizeOfBlock, byteorder='big', signed=False)
 		sizeOfDataDone = sizeOfDataDone + sizeOfBlock
 	tock = time.clock()
-	print('Encryption Complete. Total Time Taken ' + str(tock - tick))
+	print('Encryption Complete. Time Taken ' + str(tock - tick))
 	return encryptedData
 
 def decrypt(data, strKey):
@@ -163,7 +163,7 @@ def decrypt(data, strKey):
 		decryptedData = decryptedData + targetBlock.to_bytes(sizeOfBlock, byteorder='big', signed=False)
 		sizeOfDataDone = sizeOfDataDone + sizeOfBlock
 	tock = time.clock()
-	print('Decryption Complete. Total Time Taken ' + str(tock - tick))
+	print('Decryption Complete. Time Taken ' + str(tock - tick))
 
 	return decryptedData
 

@@ -14,6 +14,13 @@ def encrypt_image(img, strKey):
 	e_img = np.reshape(e_img, img.shape)
 	return e_img
 
+def multiple_encrypt_image(img,strKey, numIteration):
+	for i in range(1,numIteration+1):
+		print("PASS "+str(i))
+		te.changeSizeOfBlockMul(i*2)
+		img = encrypt_image(img, strKey)
+	return img
+
 def main(img_path, strKey, outputfilename):
 
 	
@@ -26,7 +33,7 @@ def main(img_path, strKey, outputfilename):
 
 	print('Encrypting image ...')
 	tick = time.clock()
-	e_img = encrypt_image(img, strKey)
+	e_img = multiple_encrypt_image(img, strKey, 10)
 	ftools.save_image(e_img, outputfilename)
 	tock = time.clock()
 	print('Encryption Complete. Time Taken ' + str(tock - tick))

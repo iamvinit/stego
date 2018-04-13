@@ -32,13 +32,8 @@ def hide_image(cover_img, sec_img, strKey):
 	metadata[4] = sec_img.shape[1] & 0xFF
 
 
-	#encrypting the sec_img (see encrypt.py)
-	e_img = bytearray(sec_img)
-	for i in range(1,10 + 1):
-		print("PASS "+str(i))
-		te.changeSizeOfBlockMul(i*2)
-		e_img = te.encrypt(e_img, strKey)
-	e_sec_img = metadata + e_img
+	#encrypting the sec_img
+	e_sec_img = metadata + te.encrypt(bytearray(sec_img), strKey)
 	e_sec_img = np.frombuffer(e_sec_img, dtype='uint8')
 	ftools.save_image(np.reshape(e_sec_img[5:],sec_img.shape), "encrypted.png")
 
@@ -81,13 +76,8 @@ def unhide_image(stego_img, strKey):
 	sec_img_height = metadata[3] << 8 | metadata[4]
 	sec_img_shape = (sec_img_width,sec_img_height,metadata[0])
 
-	#decrypt sec_img (see decrypt.py)
-	sec_img = bytearray(stego_img_freq[5:np.prod(sec_img_shape)+5,0])
-	for i in range(10, 0, -1):
-		print("PASS "+str(i))
-		te.changeSizeOfBlockMul(i*2)
-		sec_img = te.decrypt(bytearray(sec_img), strKey)
-
+	#decrypt sec_img
+	sec_img = te.decrypt(bytearray(stego_img_freq[5:np.prod(sec_img_shape)+5,0]), strKey)
 	sec_img = np.frombuffer(sec_img, dtype='uint8')
 
 	#reshaping image

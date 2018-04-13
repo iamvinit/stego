@@ -14,6 +14,13 @@ def decrypt_image(img, strKey):
 	e_img = np.reshape(e_img, img.shape)
 	return e_img
 
+def multiple_decrypt_image(img,strKey, numIteration):
+	for i in range(numIteration, 0, -1):
+		print("PASS "+str(i))
+		te.changeSizeOfBlockMul(i*2)
+		img = decrypt_image(img, strKey)
+	return img
+
 def main(img_path, strKey, outputfilename):
 
 	
@@ -26,7 +33,7 @@ def main(img_path, strKey, outputfilename):
 
 	print('Decrypting image ...')
 	tick = time.clock()
-	e_img = decrypt_image(img, strKey)
+	e_img = multiple_decrypt_image(img, strKey, 10)
 	ftools.save_image(e_img, outputfilename)
 	tock = time.clock()
 	print('Decryption Complete. Time Taken ' + str(tock - tick))
