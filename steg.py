@@ -1,5 +1,5 @@
 import fdpttools as ftools
-import triencryptbytes as te
+import triencryptbytesn as te
 import numpy as np
 import math
 import argparse
@@ -97,17 +97,7 @@ def max_diff(cover_img, stego_img):
 	stego_img = stego_img.astype(np.int32)
 	return np.max(abs(cover_img - stego_img))
 
-def main():
-
-	parser = argparse.ArgumentParser(description = 'Performs Steganography')
-	parser.add_argument("coverimage", help="Cover Image path")
-	parser.add_argument("secretimage", help="Secret Image path")
-	parser.add_argument("key", help="Key to encrypt Secret Image")
-	args = parser.parse_args()
-	cover_img_path = args.coverimage
-	sec_img_path = args.secretimage
-	strKey = args.key
-
+def main(cover_img_path, sec_img_path, strKey):
 	print('Loading ...')
 	tick = time.clock()
 	#loading
@@ -136,4 +126,12 @@ def main():
 
 
 if __name__ == "__main__":
-	main()
+	parser = argparse.ArgumentParser(description = 'Performs Steganography')
+	parser.add_argument("coverimage", help="Cover Image path")
+	parser.add_argument("secretimage", help="Secret Image path")
+	parser.add_argument("key", help="Key to encrypt Secret Image")
+	args = parser.parse_args()
+	cover_img_path = args.coverimage
+	sec_img_path = args.secretimage
+	strKey = args.key
+	main(cover_img_path, sec_img_path, strKey)
